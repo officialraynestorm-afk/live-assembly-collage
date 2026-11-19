@@ -1,0 +1,1284 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Live Assembly Collage</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            slate: {
+              850: '#162032',
+              900: '#0f172a',
+              950: '#080d18',
+            }
+          }
+        }
+      }
+    };
+  </script>
+  <style>
+    /* Motion and visual animations for Live Photo simulation */
+    @keyframes livePulseRing {
+      0%, 100% {
+        transform: scale(1);
+        opacity: 0.9;
+      }
+      50% {
+        transform: scale(1.18);
+        opacity: 0.45;
+      }
+    }
+
+    @keyframes liveKenBurns {
+      0% {
+        transform: scale(1) translate3d(0, 0, 0);
+      }
+      50% {
+        transform: scale(1.08) translate3d(-1.5%, -1.2%, 0);
+      }
+      100% {
+        transform: scale(1.03) translate3d(1%, 0.6%, 0);
+      }
+    }
+
+    .live-dot {
+      animation: livePulseRing 2s ease-in-out infinite;
+    }
+
+    .live-media.is-live-active img {
+      animation: liveKenBurns 3.8s ease-in-out infinite alternate;
+      filter: contrast(1.05) brightness(1.03);
+    }
+
+    .live-media img {
+      transition: transform 0.55s cubic-bezier(0.22, 1, 0.36, 1), filter 0.35s ease;
+      will-change: transform;
+    }
+
+    .blueprint-grid {
+      background-color: #080d18;
+      background-image:
+        linear-gradient(to right, rgba(148, 163, 184, 0.06) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(148, 163, 184, 0.06) 1px, transparent 1px);
+      background-size: 28px 28px;
+    }
+
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+
+    .prevent-callout {
+      -webkit-touch-callout: none;
+      -webkit-user-select: none;
+      user-select: none;
+    }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 font-sans antialiased min-h-screen flex flex-col selection:bg-sky-500/30 selection:text-sky-200 overflow-x-hidden">
+  <!-- Top Header and Controls -->
+  <header class="sticky top-0 z-30 bg-slate-950/90 backdrop-blur-md border-b border-slate-800/80 px-4 py-3 sm:px-6">
+    <div class="max-w-7xl mx-auto flex flex-col gap-3">
+      <div class="flex items-center justify-between gap-3">
+        <div class="flex items-center gap-3 min-w-0">
+          <div class="w-9 h-9 rounded-xl bg-slate-900 border border-slate-700/80 flex items-center justify-center text-sky-400 shrink-0">
+            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <rect x="3" y="3" width="8" height="8" rx="1.5" />
+              <rect x="13" y="3" width="8" height="8" rx="1.5" />
+              <rect x="3" y="13" width="8" height="8" rx="1.5" />
+              <rect x="13" y="13" width="8" height="8" rx="1.5" />
+            </svg>
+          </div>
+          <div class="min-w-0">
+            <h1 class="text-base sm:text-lg font-semibold tracking-tight text-slate-100 truncate">
+              Live Assembly Collage
+            </h1>
+            <p id="statusSubtitle" class="text-xs text-slate-400 flex items-center gap-1.5 truncate">
+              <span class="inline-block w-1.5 h-1.5 rounded-full bg-teal-400 shrink-0"></span>
+              <span>5 frames ready (hover or press and hold for Live motion)</span>
+            </p>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2 shrink-0">
+          <button
+            type="button"
+            id="liveLoopBtn"
+            onclick="toggleLiveLoop()"
+            class="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium bg-slate-900 hover:bg-slate-800 border border-slate-700/80 text-slate-200 transition active:scale-95"
+          >
+            <span class="w-2 h-2 rounded-full bg-amber-400 live-dot"></span>
+            <span id="liveLoopLabel">Live Loop</span>
+          </button>
+
+          <button
+            type="button"
+            onclick="openPinsDrawer()"
+            class="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium bg-sky-500/15 hover:bg-sky-500/25 border border-sky-400/35 text-sky-300 transition active:scale-95"
+          >
+            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M12 22s-7-6.2-7-12a7 7 0 0 1 14 0c0 5.8-7 12-7 12z" />
+              <circle cx="12" cy="10" r="2.5" />
+            </svg>
+            <span>Pins (<span id="totalPinsCount">1</span>)</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Mode Switcher and Local Photo Loader -->
+      <div class="flex flex-wrap items-center justify-between gap-2">
+        <div class="inline-flex p-1 rounded-xl bg-slate-900 border border-slate-800" role="tablist" aria-label="Collage display mode">
+          <button
+            type="button"
+            id="tab-grid"
+            onclick="setDisplayMode('grid')"
+            class="px-3 py-1.5 rounded-lg text-xs font-medium transition bg-sky-500/20 text-sky-300 border border-sky-400/35"
+          >
+            Grid
+          </button>
+          <button
+            type="button"
+            id="tab-board"
+            onclick="setDisplayMode('board')"
+            class="px-3 py-1.5 rounded-lg text-xs font-medium transition text-slate-400 hover:text-slate-200 border border-transparent"
+          >
+            Board
+          </button>
+          <button
+            type="button"
+            id="tab-compare"
+            onclick="setDisplayMode('compare')"
+            class="px-3 py-1.5 rounded-lg text-xs font-medium transition text-slate-400 hover:text-slate-200 border border-transparent"
+          >
+            Compare
+          </button>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <label
+            for="devicePhotoInput"
+            class="cursor-pointer flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-200 transition active:scale-95"
+          >
+            <svg class="w-3.5 h-3.5 text-teal-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+              <polyline points="17 8 12 3 7 8" />
+              <line x1="12" y1="3" x2="12" y2="15" />
+            </svg>
+            <span>Load Photos from Device</span>
+          </label>
+          <input
+            id="devicePhotoInput"
+            type="file"
+            accept="image/*"
+            multiple
+            class="hidden"
+            onchange="handleDevicePhotoUpload(event)"
+          />
+          <button
+            type="button"
+            id="restoreDefaultsBtn"
+            onclick="restoreDefaultPhotos()"
+            class="hidden px-2.5 py-1.5 rounded-xl text-xs font-medium bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-300 transition"
+          >
+            Restore 5 Defaults
+          </button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Workspace -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 py-5 sm:px-6">
+    <!-- GRID VIEW -->
+    <section id="view-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-4 sm:gap-5">
+      <!-- Populated immediately on load -->
+    </section>
+
+    <!-- BOARD VIEW -->
+    <section id="view-board" class="hidden space-y-3">
+      <div class="flex flex-wrap items-center justify-between gap-2">
+        <p class="text-xs text-slate-400">
+          Drag cards freely across the pinboard. Tap a card title or expand button to inspect in full screen.
+        </p>
+        <button
+          type="button"
+          onclick="resetBoardPositions()"
+          class="px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-300 transition"
+        >
+          Reset Board
+        </button>
+      </div>
+      <div id="boardCanvas" class="relative w-full h-[68vh] min-h-[500px] rounded-2xl border border-slate-800 blueprint-grid overflow-hidden shadow-2xl touch-none">
+        <!-- Populated immediately on load -->
+      </div>
+    </section>
+
+    <!-- COMPARE VIEW -->
+    <section id="view-compare" class="hidden space-y-4">
+      <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-3 sm:p-4 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+        <div class="flex items-center gap-2 flex-1">
+          <span class="text-xs font-mono uppercase tracking-wider text-sky-300 px-2 py-1 rounded bg-sky-500/15 border border-sky-400/25 shrink-0">
+            Left
+          </span>
+          <select id="compareSelectLeft" onchange="updateComparisonView()" class="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs sm:text-sm text-slate-100 focus:outline-none focus:border-sky-400"></select>
+        </div>
+
+        <button
+          type="button"
+          onclick="swapComparisonFrames()"
+          class="self-center px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-medium text-slate-200 border border-slate-700 transition"
+        >
+          Swap
+        </button>
+
+        <div class="flex items-center gap-2 flex-1">
+          <span class="text-xs font-mono uppercase tracking-wider text-teal-300 px-2 py-1 rounded bg-teal-500/15 border border-teal-400/25 shrink-0">
+            Right
+          </span>
+          <select id="compareSelectRight" onchange="updateComparisonView()" class="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs sm:text-sm text-slate-100 focus:outline-none focus:border-teal-400"></select>
+        </div>
+      </div>
+
+      <div id="compareStage" class="relative w-full max-w-3xl mx-auto aspect-[3/4] sm:aspect-[4/3] rounded-2xl overflow-hidden border border-slate-800 bg-slate-950 shadow-2xl select-none touch-none">
+        <img id="compareImgRight" src="" alt="Right comparison photo" class="absolute inset-0 w-full h-full object-contain bg-slate-950" />
+        <div id="compareClipLeft" class="absolute inset-0 overflow-hidden" style="width: 50%;">
+          <img id="compareImgLeft" src="" alt="Left comparison photo" class="absolute inset-0 w-full h-full object-contain bg-slate-950 max-w-none" />
+        </div>
+        <div id="compareHandle" class="absolute top-0 bottom-0 w-0.5 bg-sky-400 shadow-[0_0_12px_rgba(56,189,248,0.75)] cursor-ew-resize" style="left: 50%;">
+          <div class="absolute top-1/2 -translate-x-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-slate-900 border-2 border-sky-400 text-sky-200 font-mono text-xs font-semibold flex items-center justify-center shadow-lg">
+            &lt;&gt;
+          </div>
+        </div>
+        <div id="compareBadgeLeft" class="absolute top-3 left-3 px-2.5 py-1 rounded-lg bg-slate-950/85 border border-slate-700 text-xs font-mono text-sky-300 pointer-events-none"></div>
+        <div id="compareBadgeRight" class="absolute top-3 right-3 px-2.5 py-1 rounded-lg bg-slate-950/85 border border-slate-700 text-xs font-mono text-teal-300 pointer-events-none"></div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Full-Screen Lightbox Inspector -->
+  <div id="lightboxModal" class="fixed inset-0 z-50 hidden bg-slate-950/95 backdrop-blur-lg flex flex-col">
+    <div class="flex items-center justify-between px-4 py-3 border-b border-slate-800 bg-slate-950/90 z-20 gap-2">
+      <div class="flex items-center gap-2.5 min-w-0">
+        <button
+          type="button"
+          onclick="closeLightbox()"
+          class="px-3 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-xs font-medium text-slate-200 transition shrink-0"
+        >
+          Back
+        </button>
+        <div class="min-w-0">
+          <div class="flex items-center gap-2">
+            <h2 id="lightboxTitle" class="text-sm sm:text-base font-semibold text-slate-100 truncate">Frame</h2>
+            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-mono uppercase bg-amber-400/15 text-amber-300 border border-amber-400/30 shrink-0">
+              <span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
+              LIVE
+            </span>
+          </div>
+          <p id="lightboxCaption" class="text-xs text-slate-400 truncate"></p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-1.5 shrink-0">
+        <button type="button" onclick="stepLightbox(-1)" class="px-2.5 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-xs font-mono text-slate-200 transition">
+          Prev
+        </button>
+        <span id="lightboxCounter" class="text-xs font-mono text-slate-400 px-1">1/5</span>
+        <button type="button" onclick="stepLightbox(1)" class="px-2.5 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-xs font-mono text-slate-200 transition">
+          Next
+        </button>
+      </div>
+    </div>
+
+    <div id="lightboxViewport" class="relative flex-1 overflow-hidden flex items-center justify-center bg-slate-950 touch-none cursor-grab active:cursor-grabbing">
+      <div id="lightboxTransformBox" class="relative transition-transform duration-75 ease-out origin-center flex items-center justify-center">
+        <img id="lightboxImg" src="" alt="Inspected assembly frame" class="max-h-[72vh] max-w-[92vw] object-contain rounded-lg shadow-2xl pointer-events-none select-none" />
+        <div id="lightboxPinsLayer" class="absolute inset-0"></div>
+      </div>
+
+      <div id="pinPlacementBanner" class="hidden absolute top-4 left-1/2 -translate-x-1/2 px-4 py-2 rounded-full bg-sky-500/20 backdrop-blur-md border border-sky-400/50 text-sky-200 text-xs font-medium shadow-lg pointer-events-none">
+        Tap on the image to place a diagnostic pin
+      </div>
+    </div>
+
+    <div class="border-t border-slate-800 bg-slate-950/95 px-4 py-3 z-20">
+      <div class="max-w-4xl mx-auto flex flex-wrap items-center justify-between gap-2">
+        <div class="flex items-center gap-1.5 bg-slate-900 p-1 rounded-xl border border-slate-800">
+          <button type="button" onclick="adjustLightboxZoom(-0.5)" class="px-2.5 py-1.5 rounded-lg hover:bg-slate-800 text-xs font-mono text-slate-200 transition">-</button>
+          <span id="lightboxZoomLabel" class="text-xs font-mono text-slate-300 w-12 text-center">100%</span>
+          <button type="button" onclick="adjustLightboxZoom(0.5)" class="px-2.5 py-1.5 rounded-lg hover:bg-slate-800 text-xs font-mono text-slate-200 transition">+</button>
+          <button type="button" onclick="resetLightboxZoom()" class="px-2.5 py-1.5 rounded-lg text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-300 transition">Reset</button>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <button
+            type="button"
+            onmousedown="setLightboxLiveMotion(true)"
+            onmouseup="setLightboxLiveMotion(false)"
+            onmouseleave="setLightboxLiveMotion(false)"
+            ontouchstart="setLightboxLiveMotion(true)"
+            ontouchend="setLightboxLiveMotion(false)"
+            class="px-3.5 py-2 rounded-xl text-xs font-medium bg-amber-400/15 hover:bg-amber-400/25 border border-amber-400/35 text-amber-300 transition select-none active:scale-95"
+          >
+            Hold Live
+          </button>
+
+          <button
+            type="button"
+            id="pinModeToggleBtn"
+            onclick="togglePinPlacementMode()"
+            class="px-3.5 py-2 rounded-xl text-xs font-medium bg-sky-500/20 hover:bg-sky-500/30 border border-sky-400/40 text-sky-300 transition active:scale-95"
+          >
+            Add Pin
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pin Note Entry Modal -->
+  <div id="pinEditorModal" class="fixed inset-0 z-50 hidden bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-sm w-full p-5 shadow-2xl space-y-4">
+      <div class="flex items-center justify-between">
+        <h3 class="text-sm font-semibold text-slate-100">Add Diagnostic Pin</h3>
+        <button type="button" onclick="closePinEditor()" class="text-slate-400 hover:text-slate-200 text-xs">Close</button>
+      </div>
+
+      <div>
+        <span class="block text-xs text-slate-400 mb-1.5">Category</span>
+        <div class="grid grid-cols-3 gap-2">
+          <button type="button" data-cat="Clearance|sky" onclick="choosePinCategory(this, 'Clearance', 'sky')" class="pin-category-btn px-2.5 py-1.5 rounded-lg text-xs font-medium bg-sky-500/20 border border-sky-400 text-sky-300">Clearance</button>
+          <button type="button" data-cat="Fastener|teal" onclick="choosePinCategory(this, 'Fastener', 'teal')" class="pin-category-btn px-2.5 py-1.5 rounded-lg text-xs font-medium bg-slate-800 border border-slate-700 text-slate-300">Fastener</button>
+          <button type="button" data-cat="Alignment|amber" onclick="choosePinCategory(this, 'Alignment', 'amber')" class="pin-category-btn px-2.5 py-1.5 rounded-lg text-xs font-medium bg-slate-800 border border-slate-700 text-slate-300">Alignment</button>
+        </div>
+      </div>
+
+      <div>
+        <label for="pinNoteField" class="block text-xs text-slate-400 mb-1.5">Note</label>
+        <input
+          id="pinNoteField"
+          type="text"
+          placeholder="Describe seam gap, bolt boss, or stud position"
+          class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-sky-400"
+        />
+      </div>
+
+      <div class="flex justify-end gap-2 pt-1">
+        <button type="button" onclick="closePinEditor()" class="px-3.5 py-2 rounded-xl text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-300">Cancel</button>
+        <button type="button" onclick="confirmPinCreation()" class="px-4 py-2 rounded-xl text-xs font-semibold bg-sky-500 hover:bg-sky-400 text-slate-950 transition">Save Pin</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pins Diagnostic Drawer Modal -->
+  <div id="pinsDrawerModal" class="fixed inset-0 z-50 hidden bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-lg w-full max-h-[82vh] flex flex-col shadow-2xl">
+      <div class="p-4 border-b border-slate-800 flex items-center justify-between">
+        <h3 class="text-base font-semibold text-slate-100">Diagnostic Pins &amp; Notes</h3>
+        <button type="button" onclick="closePinsDrawer()" class="px-2.5 py-1 rounded-lg text-xs text-slate-400 hover:text-slate-200 hover:bg-slate-800">Close</button>
+      </div>
+      <div id="pinsDrawerList" class="p-4 overflow-y-auto space-y-3 flex-1"></div>
+      <div class="p-4 border-t border-slate-800 flex items-center justify-between gap-2 bg-slate-950/60 rounded-b-2xl">
+        <span id="copyStatusLabel" class="text-xs text-teal-400 opacity-0 transition-opacity">Report copied</span>
+        <div class="flex items-center gap-2 ml-auto">
+          <button type="button" onclick="copyPinsReport()" class="px-3.5 py-2 rounded-xl text-xs font-medium bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 transition">Copy Report</button>
+          <button type="button" onclick="closePinsDrawer()" class="px-4 py-2 rounded-xl text-xs font-semibold bg-sky-500 hover:bg-sky-400 text-slate-950 transition">Done</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Status Toast -->
+  <div id="statusToast" class="fixed bottom-5 left-1/2 -translate-x-1/2 z-50 px-4 py-2 rounded-full bg-slate-800/95 border border-slate-700 text-slate-100 text-xs font-medium shadow-xl opacity-0 pointer-events-none transition-opacity duration-200"></div>
+
+  <script>
+    // =========================================================================
+    // 1. DEFAULT UPLOADED PHOTOS & FALLBACK GENERATOR
+    // =========================================================================
+    function createFallbackDataUri(label, index) {
+      // Generates a clean mechanical blueprint fallback SVG data URI only if an <img> fails to load
+      const accents = ['#38bdf8', '#2dd4bf', '#fbbf24', '#94a3b8', '#60a5fa'];
+      const accent = accents[index % accents.length];
+      const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="600" height="800" viewBox="0 0 600 800">
+        <rect width="600" height="800" fill="#0f172a"/>
+        <rect x="24" y="24" width="552" height="752" rx="18" fill="none" stroke="#334155" stroke-width="2"/>
+        <circle cx="300" cy="340" r="110" fill="none" stroke="${accent}" stroke-width="3" stroke-dasharray="10 8"/>
+        <circle cx="300" cy="340" r="46" fill="#1e293b" stroke="#64748b" stroke-width="2"/>
+        <line x1="140" y1="340" x2="460" y2="340" stroke="#475569" stroke-width="1.5"/>
+        <line x1="300" y1="180" x2="300" y2="500" stroke="#475569" stroke-width="1.5"/>
+        <text x="300" y="575" text-anchor="middle" fill="#e2e8f0" font-family="monospace" font-size="22" font-weight="600">${label}</text>
+        <text x="300" y="610" text-anchor="middle" fill="#94a3b8" font-family="sans-serif" font-size="15">Fallback view (source image unavailable)</text>
+      </svg>`;
+      return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+    }
+
+    const DEFAULT_FRAMES = [
+      {
+        id: 'frame-1',
+        src: 'GEM_PHOTO_DAD128A8-23BD-4CFC-B375-BB85D7A6229D_L0_001_recent_photo_D46F827C-3CDB-4535-BC33-324F08733A7A.jpg',
+        title: 'Frame 01 - Left Flange & Seam Gap',
+        shortTitle: 'Frame 01 (Wide Left)',
+        summary: 'Full vertical view of housing flange bolts and separation seam along the ribbed casing.',
+        gridSpan: 'sm:col-span-2 lg:col-span-6 lg:row-span-2',
+        gridAspect: 'aspect-[3/4] lg:aspect-auto lg:h-full',
+        boardPos: { x: 4, y: 6, rot: -2 },
+        pins: [
+          { id: 'pin-init-1', x: 68, y: 42, category: 'Clearance', color: 'sky', note: 'Housing separation seam and internal ring edge' }
+        ]
+      },
+      {
+        id: 'frame-2',
+        src: 'GEM_PHOTO_0ACBB084-E27E-480B-B1A8-63287EBFE96B_L0_001_recent_photo_0E94175E-6D89-4F2D-91B4-056162961407.jpg',
+        title: 'Frame 02 - Upper Stud & Threaded Port',
+        shortTitle: 'Frame 02 (Upper Port)',
+        summary: 'Shifted right showing threaded port boss and upper stud alignment.',
+        gridSpan: 'sm:col-span-1 lg:col-span-3',
+        gridAspect: 'aspect-[3/4]',
+        boardPos: { x: 36, y: 5, rot: 1.5 },
+        pins: []
+      },
+      {
+        id: 'frame-3',
+        src: 'GEM_PHOTO_6A3C48C3-A214-4373-AFA8-B8DF7A26B4E7_L0_001_recent_photo_F3E37EB6-0189-4640-9CB6-A5918B831E47.jpg',
+        title: 'Frame 03 - Ribbed Grid & Dual Studs',
+        shortTitle: 'Frame 03 (Grid Casing)',
+        summary: 'Waffle-ribbed casing section, upper threaded studs, and lower cylinder detail.',
+        gridSpan: 'sm:col-span-1 lg:col-span-3',
+        gridAspect: 'aspect-[3/4]',
+        boardPos: { x: 65, y: 8, rot: -1.5 },
+        pins: []
+      },
+      {
+        id: 'frame-4',
+        src: 'GEM_PHOTO_A9AEF53F-45DC-4962-A3FF-9726C4D469D4_L0_001_recent_photo_2755623C-EF86-4A77-9C86-11212762CAFC.jpg',
+        title: 'Frame 04 - Diffused Flange Seating',
+        shortTitle: 'Frame 04 (Diffused Flange)',
+        summary: 'Even lighting showing flange bolt bosses and lower casting gussets.',
+        gridSpan: 'sm:col-span-1 lg:col-span-3',
+        gridAspect: 'aspect-[3/4]',
+        boardPos: { x: 20, y: 44, rot: 2 },
+        pins: []
+      },
+      {
+        id: 'frame-5',
+        src: 'GEM_PHOTO_46006F7D-D203-4DB6-A85A-FF0CF03DD666_L0_001_recent_photo_5DAC58C3-1E50-48D5-96C2-8C0348C8FEC0.jpg',
+        title: 'Frame 05 - Center Seam & Threaded Boss',
+        shortTitle: 'Frame 05 (Center Seam)',
+        summary: 'Close angle on the seam ring detail and machined threaded boss.',
+        gridSpan: 'sm:col-span-1 lg:col-span-3',
+        gridAspect: 'aspect-[3/4]',
+        boardPos: { x: 52, y: 42, rot: -1 },
+        pins: []
+      }
+    ];
+
+    let frames = JSON.parse(JSON.stringify(DEFAULT_FRAMES));
+    let usingCustomDevicePhotos = false;
+    let currentMode = 'grid';
+    let liveLoopEnabled = false;
+    let lightboxIdx = 0;
+    let lbZoom = 1;
+    let lbPanX = 0;
+    let lbPanY = 0;
+    let pinPlacementActive = false;
+    let draftPinLocation = null;
+    let activePinStyle = { category: 'Clearance', color: 'sky' };
+    let topCardZ = 20;
+
+    // =========================================================================
+    // 2. INITIALIZATION & IMAGE ERROR FALLBACK
+    // =========================================================================
+    window.addEventListener('DOMContentLoaded', () => {
+      renderAllViews();
+      populateCompareDropdowns();
+      updatePinsCounter();
+      updateStatusSubtitle();
+    });
+
+    function attachImageFallback(imgEl, label, idx) {
+      imgEl.addEventListener('error', function handleImgError() {
+        if (this.dataset.fallbackApplied === 'true') return;
+        this.dataset.fallbackApplied = 'true';
+        this.src = createFallbackDataUri(label, idx);
+      }, { once: true });
+    }
+
+    function showToast(message) {
+      const toast = document.getElementById('statusToast');
+      toast.textContent = message;
+      toast.classList.remove('opacity-0');
+      clearTimeout(window._toastTimer);
+      window._toastTimer = setTimeout(() => {
+        toast.classList.add('opacity-0');
+      }, 2200);
+    }
+
+    function updateStatusSubtitle() {
+      const el = document.getElementById('statusSubtitle').lastElementChild;
+      const sourceLabel = usingCustomDevicePhotos ? 'loaded from device' : 'ready';
+      el.textContent = `${frames.length} frames ${sourceLabel} (hover or press and hold for Live motion)`;
+    }
+
+    function renderAllViews() {
+      renderGridView();
+      renderBoardView();
+      if (currentMode === 'compare') {
+        updateComparisonView();
+      }
+    }
+
+    // =========================================================================
+    // 3. DEVICE PHOTO UPLOAD & RESTORE
+    // =========================================================================
+    function handleDevicePhotoUpload(event) {
+      const files = Array.from(event.target.files || []);
+      if (files.length === 0) return;
+
+      const readerPromises = files.map((file, idx) => {
+        return new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            const baseTitle = file.name.replace(/\.[^/.]+$/, '');
+            const defaultSlot = DEFAULT_FRAMES[idx % DEFAULT_FRAMES.length];
+            resolve({
+              id: 'device-' + idx + '-' + Date.now(),
+              src: e.target.result,
+              title: `Device ${String(idx + 1).padStart(2, '0')} - ${baseTitle}`,
+              shortTitle: `Device ${String(idx + 1).padStart(2, '0')}`,
+              summary: `Loaded from device file: ${file.name}`,
+              gridSpan: defaultSlot ? defaultSlot.gridSpan : 'sm:col-span-1 lg:col-span-4',
+              gridAspect: defaultSlot ? defaultSlot.gridAspect : 'aspect-[3/4]',
+              boardPos: {
+                x: 6 + ((idx * 19) % 62),
+                y: 8 + ((idx * 17) % 44),
+                rot: ((idx % 3) - 1) * 1.5
+              },
+              pins: []
+            });
+          };
+          reader.readAsDataURL(file);
+        });
+      });
+
+      Promise.all(readerPromises).then((loadedFrames) => {
+        frames = loadedFrames;
+        usingCustomDevicePhotos = true;
+        document.getElementById('restoreDefaultsBtn').classList.remove('hidden');
+        populateCompareDropdowns();
+        renderAllViews();
+        updatePinsCounter();
+        updateStatusSubtitle();
+        showToast(`Loaded ${frames.length} photo(s) from device`);
+      });
+
+      event.target.value = '';
+    }
+
+    function restoreDefaultPhotos() {
+      frames = JSON.parse(JSON.stringify(DEFAULT_FRAMES));
+      usingCustomDevicePhotos = false;
+      document.getElementById('restoreDefaultsBtn').classList.add('hidden');
+      populateCompareDropdowns();
+      renderAllViews();
+      updatePinsCounter();
+      updateStatusSubtitle();
+      showToast('Restored all 5 default photos');
+    }
+
+    // =========================================================================
+    // 4. GRID COLLAGE RENDERING & LIVE MOTION
+    // =========================================================================
+    function renderGridView() {
+      const grid = document.getElementById('view-grid');
+      grid.innerHTML = '';
+
+      frames.forEach((frame, idx) => {
+        const card = document.createElement('article');
+        card.className = `live-media prevent-callout group rounded-2xl overflow-hidden bg-slate-900 border border-slate-800 hover:border-sky-400/50 shadow-xl transition-colors flex flex-col ${frame.gridSpan} ${liveLoopEnabled ? 'is-live-active' : ''}`;
+
+        const mediaBox = document.createElement('div');
+        mediaBox.className = `relative w-full overflow-hidden bg-slate-950 cursor-pointer flex-1 ${frame.gridAspect}`;
+
+        const img = document.createElement('img');
+        img.src = frame.src;
+        img.alt = frame.shortTitle;
+        img.className = 'w-full h-full object-cover block';
+        attachImageFallback(img, frame.shortTitle, idx);
+
+        const topOverlay = document.createElement('div');
+        topOverlay.className = 'absolute top-3 left-3 right-3 flex items-center justify-between pointer-events-none z-10';
+        topOverlay.innerHTML = `
+          <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-mono font-semibold bg-slate-950/80 backdrop-blur-sm border border-amber-400/35 text-amber-300">
+            <span class="w-1.5 h-1.5 rounded-full bg-amber-400 live-dot"></span>
+            LIVE
+          </span>
+          <div class="flex items-center gap-1.5">
+            ${frame.pins.length > 0 ? `<span class="px-2 py-0.5 rounded-full text-[11px] font-mono bg-sky-500/25 border border-sky-400/40 text-sky-200">${frame.pins.length} pin</span>` : ''}
+            <span class="px-2 py-0.5 rounded-md text-[11px] font-mono bg-slate-950/75 border border-slate-700/80 text-slate-200">#${String(idx + 1).padStart(2, '0')}</span>
+          </div>
+        `;
+
+        // Miniature pin dots on grid card
+        const pinLayer = document.createElement('div');
+        pinLayer.className = 'absolute inset-0 pointer-events-none';
+        frame.pins.forEach((pin) => {
+          const dot = document.createElement('span');
+          dot.style.left = `${pin.x}%`;
+          dot.style.top = `${pin.y}%`;
+          dot.className = `absolute -translate-x-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-${pin.color}-400 ring-2 ring-slate-950 shadow`;
+          pinLayer.appendChild(dot);
+        });
+
+        const footer = document.createElement('div');
+        footer.className = 'p-3.5 bg-slate-900 border-t border-slate-800/80 flex items-center justify-between gap-2';
+        footer.innerHTML = `
+          <div class="min-w-0">
+            <h2 class="text-xs sm:text-sm font-semibold text-slate-100 truncate">${frame.title}</h2>
+            <p class="text-[11px] text-slate-400 truncate mt-0.5">${frame.summary}</p>
+          </div>
+          <button type="button" class="shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-800 hover:bg-sky-500/20 text-slate-200 hover:text-sky-300 border border-slate-700 hover:border-sky-400/40 transition">
+            Inspect
+          </button>
+        `;
+
+        // Hover & press-and-hold Live motion interaction
+        let holdTimer = null;
+        let longPressTriggered = false;
+
+        const activateLive = () => card.classList.add('is-live-active');
+        const deactivateLive = () => {
+          if (!liveLoopEnabled) {
+            card.classList.remove('is-live-active');
+          }
+        };
+
+        mediaBox.addEventListener('mouseenter', activateLive);
+        mediaBox.addEventListener('mouseleave', deactivateLive);
+
+        mediaBox.addEventListener('touchstart', () => {
+          longPressTriggered = false;
+          holdTimer = setTimeout(() => {
+            longPressTriggered = true;
+            activateLive();
+            if (navigator.vibrate) navigator.vibrate(12);
+          }, 180);
+        }, { passive: true });
+
+        mediaBox.addEventListener('touchend', () => {
+          clearTimeout(holdTimer);
+          deactivateLive();
+        });
+
+        mediaBox.addEventListener('click', (e) => {
+          if (longPressTriggered) {
+            e.preventDefault();
+            return;
+          }
+          openLightbox(idx);
+        });
+
+        footer.querySelector('button').addEventListener('click', () => openLightbox(idx));
+
+        mediaBox.appendChild(img);
+        mediaBox.appendChild(topOverlay);
+        mediaBox.appendChild(pinLayer);
+        card.appendChild(mediaBox);
+        card.appendChild(footer);
+        grid.appendChild(card);
+      });
+    }
+
+    function toggleLiveLoop() {
+      liveLoopEnabled = !liveLoopEnabled;
+      document.querySelectorAll('.live-media').forEach((el) => {
+        el.classList.toggle('is-live-active', liveLoopEnabled);
+      });
+      const btn = document.getElementById('liveLoopBtn');
+      const label = document.getElementById('liveLoopLabel');
+      if (liveLoopEnabled) {
+        label.textContent = 'Stop Loop';
+        btn.classList.add('border-amber-400/50', 'text-amber-300', 'bg-amber-400/10');
+        showToast('Live motion loop enabled');
+      } else {
+        label.textContent = 'Live Loop';
+        btn.classList.remove('border-amber-400/50', 'text-amber-300', 'bg-amber-400/10');
+        showToast('Live motion loop stopped');
+      }
+    }
+
+    // =========================================================================
+    // 5. DISPLAY MODE SWITCHER (GRID / BOARD / COMPARE)
+    // =========================================================================
+    function setDisplayMode(mode) {
+      currentMode = mode;
+      ['grid', 'board', 'compare'].forEach((m) => {
+        const view = document.getElementById(`view-${m}`);
+        const tab = document.getElementById(`tab-${m}`);
+        if (m === mode) {
+          view.classList.remove('hidden');
+          tab.className = 'px-3 py-1.5 rounded-lg text-xs font-medium transition bg-sky-500/20 text-sky-300 border border-sky-400/35';
+        } else {
+          view.classList.add('hidden');
+          tab.className = 'px-3 py-1.5 rounded-lg text-xs font-medium transition text-slate-400 hover:text-slate-200 border border-transparent';
+        }
+      });
+
+      if (mode === 'compare') {
+        updateComparisonView();
+      }
+    }
+
+    // =========================================================================
+    // 6. DRAGGABLE PINBOARD MODE
+    // =========================================================================
+    function renderBoardView() {
+      const board = document.getElementById('boardCanvas');
+      board.innerHTML = '';
+
+      frames.forEach((frame, idx) => {
+        const card = document.createElement('div');
+        card.className = `live-media prevent-callout absolute w-44 sm:w-56 rounded-xl overflow-hidden bg-slate-900 border border-slate-700 shadow-2xl cursor-grab active:cursor-grabbing ${liveLoopEnabled ? 'is-live-active' : ''}`;
+        card.style.left = `${frame.boardPos.x}%`;
+        card.style.top = `${frame.boardPos.y}%`;
+        card.style.transform = `rotate(${frame.boardPos.rot}deg)`;
+        card.style.zIndex = idx + 1;
+
+        const imgBox = document.createElement('div');
+        imgBox.className = 'relative aspect-[3/4] bg-slate-950 overflow-hidden';
+
+        const img = document.createElement('img');
+        img.src = frame.src;
+        img.alt = frame.shortTitle;
+        img.className = 'w-full h-full object-cover block pointer-events-none';
+        attachImageFallback(img, frame.shortTitle, idx);
+
+        const inspectBtn = document.createElement('button');
+        inspectBtn.type = 'button';
+        inspectBtn.textContent = 'Inspect';
+        inspectBtn.className = 'absolute top-2 right-2 px-2 py-1 rounded-lg bg-slate-950/85 hover:bg-sky-500/30 text-[11px] font-medium text-slate-100 border border-slate-700 transition';
+        inspectBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          openLightbox(idx);
+        });
+
+        const caption = document.createElement('div');
+        caption.className = 'px-2.5 py-2 bg-slate-900 border-t border-slate-800 flex items-center justify-between gap-1';
+        caption.innerHTML = `<span class="text-[11px] font-medium text-slate-200 truncate">${frame.shortTitle}</span><span class="text-[10px] font-mono text-slate-400">#${idx + 1}</span>`;
+
+        imgBox.appendChild(img);
+        imgBox.appendChild(inspectBtn);
+        card.appendChild(imgBox);
+        card.appendChild(caption);
+
+        enableBoardDrag(card, board);
+        board.appendChild(card);
+      });
+    }
+
+    function enableBoardDrag(card, board) {
+      let dragging = false;
+      let startX = 0;
+      let startY = 0;
+      let baseLeft = 0;
+      let baseTop = 0;
+
+      const onDown = (e) => {
+        if (e.target.tagName === 'BUTTON') return;
+        dragging = true;
+        topCardZ += 1;
+        card.style.zIndex = topCardZ;
+        card.classList.add('is-live-active', 'border-sky-400');
+
+        const pt = e.touches ? e.touches[0] : e;
+        startX = pt.clientX;
+        startY = pt.clientY;
+        baseLeft = card.offsetLeft;
+        baseTop = card.offsetTop;
+      };
+
+      const onMove = (e) => {
+        if (!dragging) return;
+        e.preventDefault();
+        const pt = e.touches ? e.touches[0] : e;
+        const maxX = Math.max(0, board.clientWidth - card.offsetWidth);
+        const maxY = Math.max(0, board.clientHeight - card.offsetHeight);
+        const nextX = Math.max(0, Math.min(maxX, baseLeft + (pt.clientX - startX)));
+        const nextY = Math.max(0, Math.min(maxY, baseTop + (pt.clientY - startY)));
+        card.style.left = `${nextX}px`;
+        card.style.top = `${nextY}px`;
+      };
+
+      const onUp = () => {
+        if (!dragging) return;
+        dragging = false;
+        card.classList.remove('border-sky-400');
+        if (!liveLoopEnabled) {
+          card.classList.remove('is-live-active');
+        }
+      };
+
+      card.addEventListener('mousedown', onDown);
+      window.addEventListener('mousemove', onMove);
+      window.addEventListener('mouseup', onUp);
+
+      card.addEventListener('touchstart', onDown, { passive: false });
+      window.addEventListener('touchmove', onMove, { passive: false });
+      window.addEventListener('touchend', onUp);
+    }
+
+    function resetBoardPositions() {
+      renderBoardView();
+      showToast('Board positions reset');
+    }
+
+    // =========================================================================
+    // 7. COMPARISON WIPE SLIDER
+    // =========================================================================
+    function populateCompareDropdowns() {
+      const selL = document.getElementById('compareSelectLeft');
+      const selR = document.getElementById('compareSelectRight');
+      selL.innerHTML = '';
+      selR.innerHTML = '';
+
+      frames.forEach((frame, idx) => {
+        selL.add(new Option(frame.shortTitle, idx));
+        selR.add(new Option(frame.shortTitle, idx));
+      });
+
+      selL.value = '0';
+      selR.value = frames.length > 1 ? '1' : '0';
+
+      const imgL = document.getElementById('compareImgLeft');
+      const imgR = document.getElementById('compareImgRight');
+      attachImageFallback(imgL, 'Left Frame', 0);
+      attachImageFallback(imgR, 'Right Frame', 1);
+    }
+
+    function updateComparisonView() {
+      const idxL = parseInt(document.getElementById('compareSelectLeft').value || '0', 10);
+      const idxR = parseInt(document.getElementById('compareSelectRight').value || '0', 10);
+      const leftFrame = frames[idxL] || frames[0];
+      const rightFrame = frames[idxR] || frames[0];
+
+      document.getElementById('compareImgLeft').src = leftFrame.src;
+      document.getElementById('compareImgRight').src = rightFrame.src;
+      document.getElementById('compareBadgeLeft').textContent = leftFrame.shortTitle;
+      document.getElementById('compareBadgeRight').textContent = rightFrame.shortTitle;
+
+      requestAnimationFrame(syncCompareOverlayWidth);
+    }
+
+    function syncCompareOverlayWidth() {
+      const stage = document.getElementById('compareStage');
+      const imgL = document.getElementById('compareImgLeft');
+      if (stage && imgL) {
+        imgL.style.width = `${stage.clientWidth}px`;
+      }
+    }
+
+    function swapComparisonFrames() {
+      const selL = document.getElementById('compareSelectLeft');
+      const selR = document.getElementById('compareSelectRight');
+      const tmp = selL.value;
+      selL.value = selR.value;
+      selR.value = tmp;
+      updateComparisonView();
+    }
+
+    (function initCompareSliderGestures() {
+      const stage = document.getElementById('compareStage');
+      const handle = document.getElementById('compareHandle');
+      const clipLeft = document.getElementById('compareClipLeft');
+      let isSliding = false;
+
+      const positionAt = (clientX) => {
+        const rect = stage.getBoundingClientRect();
+        let pct = ((clientX - rect.left) / rect.width) * 100;
+        pct = Math.max(4, Math.min(96, pct));
+        handle.style.left = `${pct}%`;
+        clipLeft.style.width = `${pct}%`;
+      };
+
+      stage.addEventListener('mousedown', (e) => { isSliding = true; positionAt(e.clientX); });
+      window.addEventListener('mousemove', (e) => { if (isSliding) positionAt(e.clientX); });
+      window.addEventListener('mouseup', () => { isSliding = false; });
+
+      stage.addEventListener('touchstart', (e) => { isSliding = true; positionAt(e.touches[0].clientX); }, { passive: true });
+      stage.addEventListener('touchmove', (e) => { if (isSliding) positionAt(e.touches[0].clientX); }, { passive: true });
+      stage.addEventListener('touchend', () => { isSliding = false; });
+
+      window.addEventListener('resize', syncCompareOverlayWidth);
+    })();
+
+    // =========================================================================
+    // 8. FULL-SCREEN LIGHTBOX INSPECTOR & PINS
+    // =========================================================================
+    function openLightbox(index) {
+      lightboxIdx = index;
+      pinPlacementActive = false;
+      updatePinModeButton();
+      resetLightboxZoom();
+      renderLightboxFrame();
+      document.getElementById('lightboxModal').classList.remove('hidden');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeLightbox() {
+      document.getElementById('lightboxModal').classList.add('hidden');
+      document.body.style.overflow = '';
+      renderAllViews();
+      updatePinsCounter();
+    }
+
+    function stepLightbox(delta) {
+      lightboxIdx = (lightboxIdx + delta + frames.length) % frames.length;
+      resetLightboxZoom();
+      renderLightboxFrame();
+    }
+
+    function renderLightboxFrame() {
+      const frame = frames[lightboxIdx];
+      document.getElementById('lightboxTitle').textContent = frame.title;
+      document.getElementById('lightboxCaption').textContent = frame.summary;
+      document.getElementById('lightboxCounter').textContent = `${lightboxIdx + 1}/${frames.length}`;
+
+      const img = document.getElementById('lightboxImg');
+      img.dataset.fallbackApplied = 'false';
+      img.src = frame.src;
+      attachImageFallback(img, frame.shortTitle, lightboxIdx);
+
+      renderLightboxPins();
+    }
+
+    function setLightboxLiveMotion(active) {
+      const box = document.getElementById('lightboxTransformBox');
+      if (active) {
+        box.style.transition = 'transform 2.4s ease-in-out';
+        box.style.transform = `translate(${lbPanX}px, ${lbPanY}px) scale(${lbZoom * 1.07})`;
+      } else {
+        box.style.transition = 'transform 0.3s ease-out';
+        applyLightboxTransform();
+      }
+    }
+
+    function applyLightboxTransform() {
+      const box = document.getElementById('lightboxTransformBox');
+      box.style.transform = `translate(${lbPanX}px, ${lbPanY}px) scale(${lbZoom})`;
+      document.getElementById('lightboxZoomLabel').textContent = `${Math.round(lbZoom * 100)}%`;
+    }
+
+    function adjustLightboxZoom(delta) {
+      lbZoom = Math.max(1, Math.min(4.5, lbZoom + delta));
+      if (lbZoom === 1) {
+        lbPanX = 0;
+        lbPanY = 0;
+      }
+      applyLightboxTransform();
+    }
+
+    function resetLightboxZoom() {
+      lbZoom = 1;
+      lbPanX = 0;
+      lbPanY = 0;
+      applyLightboxTransform();
+    }
+
+    (function initLightboxPanZoom() {
+      const viewport = document.getElementById('lightboxViewport');
+      let panning = false;
+      let startX = 0;
+      let startY = 0;
+      let startPinchDist = null;
+      let startScale = 1;
+
+      viewport.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        adjustLightboxZoom(e.deltaY < 0 ? 0.35 : -0.35);
+      }, { passive: false });
+
+      viewport.addEventListener('mousedown', (e) => {
+        if (pinPlacementActive || lbZoom <= 1) return;
+        panning = true;
+        startX = e.clientX - lbPanX;
+        startY = e.clientY - lbPanY;
+      });
+
+      window.addEventListener('mousemove', (e) => {
+        if (!panning) return;
+        lbPanX = e.clientX - startX;
+        lbPanY = e.clientY - startY;
+        applyLightboxTransform();
+      });
+
+      window.addEventListener('mouseup', () => { panning = false; });
+
+      viewport.addEventListener('touchstart', (e) => {
+        if (e.touches.length === 2) {
+          startPinchDist = Math.hypot(
+            e.touches[0].clientX - e.touches[1].clientX,
+            e.touches[0].clientY - e.touches[1].clientY
+          );
+          startScale = lbZoom;
+        } else if (e.touches.length === 1 && !pinPlacementActive && lbZoom > 1) {
+          panning = true;
+          startX = e.touches[0].clientX - lbPanX;
+          startY = e.touches[0].clientY - lbPanY;
+        }
+      }, { passive: true });
+
+      viewport.addEventListener('touchmove', (e) => {
+        if (e.touches.length === 2 && startPinchDist) {
+          e.preventDefault();
+          const dist = Math.hypot(
+            e.touches[0].clientX - e.touches[1].clientX,
+            e.touches[0].clientY - e.touches[1].clientY
+          );
+          lbZoom = Math.max(1, Math.min(4.5, startScale * (dist / startPinchDist)));
+          if (lbZoom === 1) {
+            lbPanX = 0;
+            lbPanY = 0;
+          }
+          applyLightboxTransform();
+        } else if (e.touches.length === 1 && panning) {
+          lbPanX = e.touches[0].clientX - startX;
+          lbPanY = e.touches[0].clientY - startY;
+          applyLightboxTransform();
+        }
+      }, { passive: false });
+
+      viewport.addEventListener('touchend', () => {
+        panning = false;
+        startPinchDist = null;
+      });
+
+      let lastClickTime = 0;
+      viewport.addEventListener('click', (e) => {
+        if (pinPlacementActive || e.target.closest('.lightbox-pin')) return;
+        const now = Date.now();
+        if (now - lastClickTime < 280) {
+          if (lbZoom > 1) resetLightboxZoom();
+          else {
+            lbZoom = 2.4;
+            applyLightboxTransform();
+          }
+        }
+        lastClickTime = now;
+      });
+    })();
+
+    function togglePinPlacementMode() {
+      pinPlacementActive = !pinPlacementActive;
+      updatePinModeButton();
+    }
+
+    function updatePinModeButton() {
+      const btn = document.getElementById('pinModeToggleBtn');
+      const banner = document.getElementById('pinPlacementBanner');
+      const layer = document.getElementById('lightboxPinsLayer');
+
+      if (pinPlacementActive) {
+        btn.textContent = 'Tap Image...';
+        btn.className = 'px-3.5 py-2 rounded-xl text-xs font-semibold bg-sky-400 text-slate-950 shadow transition';
+        banner.classList.remove('hidden');
+        layer.classList.add('cursor-crosshair');
+      } else {
+        btn.textContent = 'Add Pin';
+        btn.className = 'px-3.5 py-2 rounded-xl text-xs font-medium bg-sky-500/20 hover:bg-sky-500/30 border border-sky-400/40 text-sky-300 transition active:scale-95';
+        banner.classList.add('hidden');
+        layer.classList.remove('cursor-crosshair');
+      }
+    }
+
+    document.getElementById('lightboxPinsLayer').addEventListener('click', (e) => {
+      if (!pinPlacementActive) return;
+      e.stopPropagation();
+      const rect = e.currentTarget.getBoundingClientRect();
+      const xPct = ((e.clientX - rect.left) / rect.width) * 100;
+      const yPct = ((e.clientY - rect.top) / rect.height) * 100;
+
+      draftPinLocation = {
+        x: Math.max(2, Math.min(98, Math.round(xPct * 10) / 10)),
+        y: Math.max(2, Math.min(98, Math.round(yPct * 10) / 10))
+      };
+
+      document.getElementById('pinNoteField').value = '';
+      document.getElementById('pinEditorModal').classList.remove('hidden');
+      setTimeout(() => document.getElementById('pinNoteField').focus(), 50);
+    });
+
+    function choosePinCategory(buttonEl, category, color) {
+      activePinStyle = { category, color };
+      document.querySelectorAll('.pin-category-btn').forEach((btn) => {
+        btn.className = 'pin-category-btn px-2.5 py-1.5 rounded-lg text-xs font-medium bg-slate-800 border border-slate-700 text-slate-300';
+      });
+      buttonEl.className = `pin-category-btn px-2.5 py-1.5 rounded-lg text-xs font-medium bg-${color}-500/20 border border-${color}-400 text-${color}-300`;
+    }
+
+    function closePinEditor() {
+      draftPinLocation = null;
+      document.getElementById('pinEditorModal').classList.add('hidden');
+    }
+
+    function confirmPinCreation() {
+      if (!draftPinLocation) return;
+      const noteText = document.getElementById('pinNoteField').value.trim() || `${activePinStyle.category} check point`;
+      frames[lightboxIdx].pins.push({
+        id: 'pin-' + Date.now(),
+        x: draftPinLocation.x,
+        y: draftPinLocation.y,
+        category: activePinStyle.category,
+        color: activePinStyle.color,
+        note: noteText
+      });
+
+      document.getElementById('pinEditorModal').classList.add('hidden');
+      draftPinLocation = null;
+      pinPlacementActive = false;
+      updatePinModeButton();
+      renderLightboxPins();
+      updatePinsCounter();
+      showToast('Diagnostic pin saved');
+    }
+
+    function deletePinById(frameIndex, pinId) {
+      frames[frameIndex].pins = frames[frameIndex].pins.filter((p) => p.id !== pinId);
+      renderLightboxPins();
+      updatePinsCounter();
+      if (!document.getElementById('pinsDrawerModal').classList.contains('hidden')) {
+        openPinsDrawer();
+      }
+      showToast('Pin removed');
+    }
+
+    function renderLightboxPins() {
+      const layer = document.getElementById('lightboxPinsLayer');
+      layer.innerHTML = '';
+      const currentFrame = frames[lightboxIdx];
+
+      currentFrame.pins.forEach((pin, idx) => {
+        const pinEl = document.createElement('div');
+        pinEl.className = 'lightbox-pin absolute -translate-x-1/2 -translate-y-1/2 z-10';
+        pinEl.style.left = `${pin.x}%`;
+        pinEl.style.top = `${pin.y}%`;
+
+        pinEl.innerHTML = `
+          <button type="button" class="w-7 h-7 rounded-full bg-${pin.color}-400 text-slate-950 font-mono font-bold text-xs flex items-center justify-center ring-2 ring-slate-950 shadow-lg">
+            ${idx + 1}
+          </button>
+          <div class="mt-1.5 w-48 p-2.5 rounded-xl bg-slate-900/95 border border-slate-700 shadow-2xl text-left">
+            <div class="flex items-center justify-between gap-1 mb-1">
+              <span class="text-[10px] font-mono uppercase text-${pin.color}-300">${pin.category}</span>
+              <button type="button" onclick="deletePinById(${lightboxIdx}, '${pin.id}')" class="text-[10px] text-slate-400 hover:text-slate-100">Delete</button>
+            </div>
+            <p class="text-xs text-slate-100 leading-snug">${pin.note}</p>
+          </div>
+        `;
+        layer.appendChild(pinEl);
+      });
+    }
+
+    function updatePinsCounter() {
+      const count = frames.reduce((sum, f) => sum + f.pins.length, 0);
+      document.getElementById('totalPinsCount').textContent = count;
+    }
+
+    // =========================================================================
+    // 9. PINS DIAGNOSTIC DRAWER & REPORT EXPORT
+    // =========================================================================
+    function openPinsDrawer() {
+      const list = document.getElementById('pinsDrawerList');
+      list.innerHTML = '';
+      let total = 0;
+
+      frames.forEach((frame, fIdx) => {
+        if (frame.pins.length === 0) return;
+        total += frame.pins.length;
+
+        const block = document.createElement('div');
+        block.className = 'bg-slate-950/80 border border-slate-800 rounded-xl p-3 space-y-2';
+        block.innerHTML = `
+          <div class="flex items-center justify-between gap-2">
+            <span class="text-xs font-semibold text-slate-200">${frame.shortTitle}</span>
+            <button type="button" onclick="closePinsDrawer(); openLightbox(${fIdx})" class="text-xs text-sky-400 hover:underline">Open frame</button>
+          </div>
+        `;
+
+        frame.pins.forEach((pin, idx) => {
+          const item = document.createElement('div');
+          item.className = 'flex items-start justify-between gap-2 text-xs bg-slate-900 p-2.5 rounded-lg border border-slate-800';
+          item.innerHTML = `
+            <div class="space-y-0.5">
+              <span class="inline-block px-1.5 py-0.5 rounded bg-${pin.color}-500/20 text-${pin.color}-300 font-mono text-[10px]">#${idx + 1} ${pin.category} (${pin.x}%, ${pin.y}%)</span>
+              <p class="text-slate-200">${pin.note}</p>
+            </div>
+            <button type="button" onclick="deletePinById(${fIdx}, '${pin.id}')" class="text-xs text-slate-400 hover:text-slate-100 shrink-0">Remove</button>
+          `;
+          block.appendChild(item);
+        });
+
+        list.appendChild(block);
+      });
+
+      if (total === 0) {
+        list.innerHTML = `
+          <div class="text-center py-8 space-y-1.5">
+            <p class="text-sm text-slate-300">No diagnostic pins placed yet.</p>
+            <p class="text-xs text-slate-500">Open any frame in the inspector and select Add Pin to mark spots.</p>
+          </div>
+        `;
+      }
+
+      document.getElementById('pinsDrawerModal').classList.remove('hidden');
+    }
+
+    function closePinsDrawer() {
+      document.getElementById('pinsDrawerModal').classList.add('hidden');
+    }
+
+    function copyPinsReport() {
+      const lines = ['LIVE ASSEMBLY COLLAGE - PINS REPORT', '===================================='];
+      let hasPins = false;
+
+      frames.forEach((frame) => {
+        if (frame.pins.length > 0) {
+          hasPins = true;
+          lines.push(`\n${frame.shortTitle}:`);
+          frame.pins.forEach((pin, idx) => {
+            lines.push(`  ${idx + 1}. [${pin.category}] ${pin.note} (${pin.x}%, ${pin.y}%)`);
+          });
+        }
+      });
+
+      if (!hasPins) {
+        lines.push('\nNo pins recorded.');
+      }
+
+      const area = document.createElement('textarea');
+      area.value = lines.join('\n');
+      document.body.appendChild(area);
+      area.select();
+      document.execCommand('copy');
+      document.body.removeChild(area);
+
+      const label = document.getElementById('copyStatusLabel');
+      label.classList.remove('opacity-0');
+      setTimeout(() => label.classList.add('opacity-0'), 2000);
+    }
+  </script>
+</body>
+</html>
